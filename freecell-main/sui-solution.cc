@@ -28,9 +28,9 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	// CLOSED 
 	std::set<SearchState> closed;
 
-	for (size_t path= 0; ; ++path) {
+	for (size_t path= 0; ; path++) {
 
-		SearchState workingState(init_state);  // TODO maybe there is something more optimal
+		SearchState workingState(init_state);  
 		
 		// ... GET CURRENT STATE
 		// if que is not empty go to the state otherwise it is first try 
@@ -42,42 +42,48 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 				workingState = action.execute(workingState);
 			}
 		}
+		// There is no solution
+		else if (actionsQueue.empty() && path > 0){ 
+			return {};
+		}
 		
 		// ... GENERATE NEXT STATES and expand them 
 		std::vector<SearchAction> actions = workingState.actions();		
+		std::vector<SearchAction> potentionalSolution; 
 		for (const SearchAction& action: actions) {
 
 			// story whole new path to the queue 
 			//  current actions (S,A,B) + actuall == (S,A,B,C)
-			std::vector<SearchAction> potentionalSolution = currentActions; 
+			potentionalSolution = currentActions; 
 			potentionalSolution.push_back(action);
 			
 			SearchState tempState(init_state); // TODO maybe there is something more optimal 
 			for (const SearchAction& action : potentionalSolution) {
 				tempState = action.execute(tempState);
 			}
-
-			// Check if currently expanded node is already a solution	
-			if (tempState.isFinal()){
-				printf("Finnal mem usage %ld\n", getCurrentRSS()); //TODO REMOVE 
-				return potentionalSolution;
-			}
-				
+			
 			// IF state is already in closed dont expand 
-			if (closed.find(tempState) != closed.end()) {
-				continue;
-			}
-			else{
+			if (closed.find(tempState) == closed.end()) {
+				
+				// Check if currently expanded node is already a solution	
+				if (tempState.isFinal()){
+					printf("Closed: %ld Open: %ld\n",closed.size(), actionsQueue.size() );
+					printf("Finnal mem usage %ld KB\n", (getCurrentRSS()/1000)); //TODO REMOVE 
+					return potentionalSolution;
+				}
+				
 				// store action vector to queue
 				closed.insert(tempState);
 				actionsQueue.push(potentionalSolution);
 			}
 
-			// mem test 
-			if ((size_t)getCurrentRSS() > mem_limit_ - 10000) {
-				return {};
-			}
+		}
 
+		// mem test // 50MB
+		if ((size_t)getCurrentRSS() > mem_limit_ - 50000000) {
+			printf("Closed: %ld Open: %ld\n",closed.size(), actionsQueue.size() );
+			printf("MEM crash %ld\n KB", (getCurrentRSS()/1000)); //TODO REMOVE 
+			return {};
 		}
 	}
 
