@@ -7,6 +7,8 @@
 #include "mem_watch.h"
 #include "memusage.h"
 
+#define BFS_MEM_LIMIT_BYTES 50000000 //50MB
+
 
 std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_state) {
 
@@ -14,7 +16,7 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	//            S 
 	//       A   B  C  D
 	// [(S,D),(S,C),(S,B),(S,A)] 
-	std::queue<std::vector<SearchAction>> actionsQueue;
+	std::queue<std::vector<SearchAction>> open;
 
 	// Finall solution vector  
 	std::vector<SearchAction> solution;
@@ -28,6 +30,9 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	// CLOSED 
 	std::set<SearchState> closed;
 
+	// look ahead buffer 	
+	std::vector<SearchAction> potentionalSolution; 
+
 	for (size_t path= 0; ; path++) {
 
 		SearchState workingState(init_state);  
@@ -35,21 +40,20 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 		// ... GET CURRENT STATE
 		// if que is not empty go to the state otherwise it is first try 
 		// This is to way to get to currently procesed node 
-		if (!actionsQueue.empty()){
-			currentActions = actionsQueue.front();
-			actionsQueue.pop();
+		if (!open.empty()){
+			currentActions = open.front();
+			open.pop();
 			for (const SearchAction& action : currentActions) {
 				workingState = action.execute(workingState);
 			}
 		}
 		// There is no solution
-		else if (actionsQueue.empty() && path > 0){ 
+		else if (open.empty() && path > 0){ 
 			return {};
 		}
 		
 		// ... GENERATE NEXT STATES and expand them 
 		std::vector<SearchAction> actions = workingState.actions();		
-		std::vector<SearchAction> potentionalSolution; 
 		for (const SearchAction& action: actions) {
 
 			// story whole new path to the queue 
@@ -57,7 +61,7 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 			potentionalSolution = currentActions; 
 			potentionalSolution.push_back(action);
 			
-			SearchState tempState(init_state); // TODO maybe there is something more optimal 
+			SearchState tempState(init_state); 
 			for (const SearchAction& action : potentionalSolution) {
 				tempState = action.execute(tempState);
 			}
@@ -67,21 +71,21 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 				
 				// Check if currently expanded node is already a solution	
 				if (tempState.isFinal()){
-					printf("Closed: %ld Open: %ld\n",closed.size(), actionsQueue.size() );
+					printf("Closed: %ld Open: %ld\n",closed.size(), open.size() );
 					printf("Finnal mem usage %ld KB\n", (getCurrentRSS()/1000)); //TODO REMOVE 
 					return potentionalSolution;
 				}
 				
 				// store action vector to queue
 				closed.insert(tempState);
-				actionsQueue.push(potentionalSolution);
+				open.push(potentionalSolution);
 			}
 
 		}
 
 		// mem test // 50MB
-		if ((size_t)getCurrentRSS() > mem_limit_ - 50000000) {
-			printf("Closed: %ld Open: %ld\n",closed.size(), actionsQueue.size() );
+		if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
+			printf("Closed: %ld Open: %ld\n",closed.size(), open.size() );
 			printf("MEM crash %ld\n KB", (getCurrentRSS()/1000)); //TODO REMOVE 
 			return {};
 		}
