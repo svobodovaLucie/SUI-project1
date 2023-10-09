@@ -7,7 +7,7 @@
 
 std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_state) {
 
-	// queue with next states 
+	// OPEN: queue with next states 
 	//            S 
 	//       A   B  C  D
 	// [(S,D),(S,C),(S,B),(S,A)] 
@@ -19,9 +19,11 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	// init first state 
 	SearchState workingState(init_state);
 	
-  
 	// vector with currently processed actions 	
 	std::vector<SearchAction> currentActions;
+
+	// CLOSED 
+	std::vector<SearchState> closed;
 
 	for (size_t path= 0; ; ++path) {
 		
@@ -47,15 +49,22 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 			std::vector<SearchAction> potentionalSolution = currentActions; 
 			potentionalSolution.push_back(action);
 			
-			// Check if currently expanded node is already a solution	
 			SearchState tempState(init_state); // TODO maybe there is something more optimal 
 			for (const SearchAction& action : potentionalSolution) {
 				tempState = action.execute(tempState);
-				if (tempState.isFinal()){
-					printf("Finnal mem usage %ld\n", getCurrentRSS());
-					return potentionalSolution;
-				}
 			}
+
+			// Check if currently expanded node is already a solution	
+			if (tempState.isFinal()){
+				printf("Finnal mem usage %ld\n", getCurrentRSS());
+				return potentionalSolution;
+			}
+
+//			// CLOSED 
+//    	if (std::find(closed.begin(), closed.end(), tempState) != v.end()) {
+//        std::cout << "Element found";
+//    	}
+//			tempState = action.execute(tempState);
 			
 			// store action vector to queue 
 			actionsQueue.push(potentionalSolution);
@@ -66,11 +75,6 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 			}
 		}
 	}
-
-
-	// TODO 
-	// mem check 
-	// memusage.h:getCurrentRSS()
 
 	return {};
 }
