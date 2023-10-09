@@ -18,66 +18,55 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 
 	// init first state 
 	SearchState workingState(init_state);
+	
   
 	// vector with currently processed actions 	
 	std::vector<SearchAction> currentActions;
 
 	for (size_t path= 0; ; ++path) {
-    
-
 		
-//		std::cout << "\n--------------\n";
+		SearchState workingState(init_state);  // TODO maybe there is something more optimal
+		
 		// ... GET CURRENT STATE
 		// if que is not empty go to the state otherwise it is first try 
 		// This is to way to get to currently procesed node 
-		SearchState workingState(init_state);
-		SearchAction currentAction = currentActions[0];
-
 		if (!actionsQueue.empty()){
 			currentActions = actionsQueue.front();
 			actionsQueue.pop();
-//			for (const SearchAction& action : currentActions) {
-//				std::cout << "akce: " << action << "\n";
-//			}
 			for (const SearchAction& action : currentActions) {
-//				std::cout << "ws: " << workingState << "\n";
 				workingState = action.execute(workingState);
-				currentAction = action;
-				if (workingState.isFinal()){
-//					std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n";
-//					std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n";
-					return currentActions;
-				}
-				
 			}
 		}
 		
 		// ... GENERATE NEXT STATES 
 		std::vector<SearchAction> actions = workingState.actions();		
-//		printf("pocet akcii %d/n", actions.size());
 		for (const SearchAction& action: actions) {
+
 			// story whole new path to the queue 
 			//  current actions (S,A,B) + actuall == (S,A,B,C)
 			std::vector<SearchAction> potentionalSolution = currentActions; 
 			potentionalSolution.push_back(action);
-
+			
+			// Check if currently expanded node is already a solution	
+			SearchState tempState(init_state); // TODO maybe there is something more optimal 
+			for (const SearchAction& action : potentionalSolution) {
+				tempState = action.execute(tempState);
+				if (tempState.isFinal()){
+					printf("Finnal mem usage %ld\n", getCurrentRSS());
+					return potentionalSolution;
+				}
+			}
+			
 			// store action vector to queue 
 			actionsQueue.push(potentionalSolution);
-			auto mem = getCurrentRSS();
-			if (mem > mem_limit_ - 100000) {
+
+			// mem test 
+			if ((size_t)getCurrentRSS() > mem_limit_ - 10000) {
 				return {};
-		}
+			}
 		}
 	}
 
-	/*
-	actionsQueue.push();
-	actionsQueue.size();
-	actionsQueue.front();
-	actionsQueue.back();
-	*/
-	
-	// actionsQueue.pop();
 
 	// TODO 
 	// mem check 
