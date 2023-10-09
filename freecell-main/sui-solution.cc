@@ -1,6 +1,9 @@
 #include "search-strategies.h"
 #include <queue>
 
+#include <algorithm>
+#include <set>
+
 #include "mem_watch.h"
 #include "memusage.h"
 
@@ -23,10 +26,10 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	std::vector<SearchAction> currentActions;
 
 	// CLOSED 
-	std::vector<SearchState> closed;
+	std::set<SearchState> closed;
 
 	for (size_t path= 0; ; ++path) {
-		
+
 		SearchState workingState(init_state);  // TODO maybe there is something more optimal
 		
 		// ... GET CURRENT STATE
@@ -40,7 +43,7 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 			}
 		}
 		
-		// ... GENERATE NEXT STATES 
+		// ... GENERATE NEXT STATES and expand them 
 		std::vector<SearchAction> actions = workingState.actions();		
 		for (const SearchAction& action: actions) {
 
@@ -56,23 +59,25 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 
 			// Check if currently expanded node is already a solution	
 			if (tempState.isFinal()){
-				printf("Finnal mem usage %ld\n", getCurrentRSS());
+				printf("Finnal mem usage %ld\n", getCurrentRSS()); //TODO REMOVE 
 				return potentionalSolution;
 			}
-
-//			// CLOSED 
-//    	if (std::find(closed.begin(), closed.end(), tempState) != v.end()) {
-//        std::cout << "Element found";
-//    	}
-//			tempState = action.execute(tempState);
-			
-			// store action vector to queue 
-			actionsQueue.push(potentionalSolution);
+				
+			// IF state is already in closed dont expand 
+			if (closed.find(tempState) != closed.end()) {
+				continue;
+			}
+			else{
+				// store action vector to queue
+				closed.insert(tempState);
+				actionsQueue.push(potentionalSolution);
+			}
 
 			// mem test 
 			if ((size_t)getCurrentRSS() > mem_limit_ - 10000) {
 				return {};
 			}
+
 		}
 	}
 
