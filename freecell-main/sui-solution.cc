@@ -18,18 +18,12 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 
 	// init first state 
 	SearchState workingState(init_state);
-	std::cout << workingState << "\n";
   
 	// vector with currently processed actions 	
 	std::vector<SearchAction> currentActions;
 
 	for (size_t path= 0; ; ++path) {
     
-		auto mem = getCurrentRSS();
-		printf("%ld\n",mem);
-  	if (mem > mem_limit_ - 100000) {
-			return {};
-		}
 
 		
 //		std::cout << "\n--------------\n";
@@ -69,6 +63,10 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 
 			// store action vector to queue 
 			actionsQueue.push(potentionalSolution);
+			auto mem = getCurrentRSS();
+			if (mem > mem_limit_ - 100000) {
+				return {};
+		}
 		}
 	}
 
