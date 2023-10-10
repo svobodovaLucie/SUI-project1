@@ -127,7 +127,6 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 				working_state = action.execute(working_state);
 			}
 
-			// todo optimalization -- check right after 
 			actions = working_state.actions();
 			for (const SearchAction& act : actions) {
 				std::vector<SearchAction> new_actions = current_actions;
@@ -136,7 +135,7 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 				SearchState temp_state(init_state);
 				for (const SearchAction& act: new_actions) {
 					temp_state = act.execute(temp_state);
-				} // optimalization // CAUTION this can cause not to find optimal solution 
+				} // optimalization // TODO CAUTION this can cause not to find optimal solution 
 				if (temp_state.isFinal() && (current_max_depth+1 <= DepthFirstSearch::depth_limit_)){
 					printf("=========  solution find using optimalization ====== \n");
 					return new_actions;
@@ -157,7 +156,7 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 		// clean and iterate 
 		std::vector<std::vector<SearchAction>>().swap(open);
 		open = next_open; 
-		printf("Depth: %ld open size: %ld closed size: %ld mem: %ld KB\n",current_max_depth, open.size(),closed.size(),(getCurrentRSS()/1000));
+		printf("Depth: %ld open size: %ld closed size: %ld mem: %ld KB\n",current_max_depth, open.size(),closed.size(),getCurrentRSS()/1000);
 		std::vector<SearchAction>().swap(current_actions);
 		std::vector<std::vector<SearchAction>>().swap(next_open);
 		
