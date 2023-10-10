@@ -22,29 +22,29 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	std::vector<SearchAction> solution;
 
 	// init first state 
-	SearchState workingState(init_state);
+	SearchState working_state(init_state);
 	
 	// vector with currently processed actions 	
-	std::vector<SearchAction> currentActions;
+	std::vector<SearchAction> current_actions;
 
 	// CLOSED 
 	std::set<SearchState> closed;
 
 	// look ahead buffer 	
-	std::vector<SearchAction> potentionalSolution; 
+	std::vector<SearchAction> potentional_solution; 
 
 	for (size_t path= 0; ; path++) {
 
-		SearchState workingState(init_state);  
+		SearchState working_state(init_state);  
 		
 		// ... GET CURRENT STATE
 		// if que is not empty go to the state otherwise it is first try 
 		// This is to way to get to currently procesed node 
 		if (!open.empty()){
-			currentActions = open.front();
+			current_actions = open.front();
 			open.pop();
-			for (const SearchAction& action : currentActions) {
-				workingState = action.execute(workingState);
+			for (const SearchAction& action : current_actions) {
+				working_state = action.execute(working_state);
 			}
 		}
 		// There is no solution
@@ -53,32 +53,32 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 		}
 		
 		// ... GENERATE NEXT STATES and expand them 
-		std::vector<SearchAction> actions = workingState.actions();		
+		std::vector<SearchAction> actions = working_state.actions();		
 		for (const SearchAction& action: actions) {
 
 			// story whole new path to the queue 
 			//  current actions (S,A,B) + actuall == (S,A,B,C)
-			potentionalSolution = currentActions; 
-			potentionalSolution.push_back(action);
+			potentional_solution = current_actions; 
+			potentional_solution.push_back(action);
 			
-			SearchState tempState(init_state); 
-			for (const SearchAction& action : potentionalSolution) {
-				tempState = action.execute(tempState);
+			SearchState temp_state(init_state); 
+			for (const SearchAction& action : potentional_solution) {
+				temp_state = action.execute(temp_state);
 			}
 			
 			// IF state is already in closed dont expand 
-			if (closed.find(tempState) == closed.end()) {
+			if (closed.find(temp_state) == closed.end()) {
 				
 				// Check if currently expanded node is already a solution	
-				if (tempState.isFinal()){
+				if (temp_state.isFinal()){
 					printf("Closed: %ld Open: %ld\n",closed.size(), open.size() );
 					printf("Finnal mem usage %ld KB\n", (getCurrentRSS()/1000)); //TODO REMOVE 
-					return potentionalSolution;
+					return potentional_solution;
 				}
 				
 				// store action vector to queue
-				closed.insert(tempState);
-				open.push(potentionalSolution);
+				closed.insert(temp_state);
+				open.push(potentional_solution);
 			}
 
 		}
@@ -100,8 +100,10 @@ std::vector<action_depth_type> solution_with_depth;
 std::vector<SearchAction> solution;
 
 bool DLS(const SearchState &init_state, size_t max_depth) {
+
 	SearchState working_state(init_state);
 	std::cout << "DLS\n";
+
 	while (!stack.empty()) {
 		// pop from the stack to variable ad
 		action_depth_type ad = stack.back();
@@ -242,16 +244,16 @@ double StudentHeuristic::distanceLowerBound(const GameState &state) const {
 
 		// Get current homeStack
 		// based on that find out what card should follow 
-    std::array<HomeDestination, nb_homes> homeStacks;
-		for (HomeDestination& home: homeStacks){
+    std::array<HomeDestination, nb_homes> home_stacks;
+		for (HomeDestination& home: home_stacks){
 			if (home.topCard().has_value()){
       	std::cout << "home" << home.topCard().value();
 			}
 		}
     
-		std::array<WorkStack, nb_stacks> workStacks = state.stacks;
+		std::array<WorkStack, nb_stacks> work_stacks = state.stacks;
 		// Get throughout home_dest and count the penalisation 
-		for (WorkStack& stack : workStacks) {
+		for (WorkStack& stack : work_stacks) {
 			
     	while (true) {
 			  std::optional<Card> card = stack.getCard();
@@ -273,13 +275,13 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 	// Same implementation as BFS (documented there)	
 	std::queue<std::vector<SearchAction>> open;
 	std::vector<SearchAction> solution;
-	SearchState workingState(init_state);
-	std::vector<SearchAction> currentActions;
+	SearchState working_state(init_state);
+	std::vector<SearchAction> current_actions;
 	std::set<SearchState> closed;
-	std::vector<SearchAction> potentionalSolution; 
+	std::vector<SearchAction> potentional_solution; 
 	
 
-	compute_heuristic(workingState, *heuristic_);
+	compute_heuristic(working_state, *heuristic_);
 	
 
 	for (size_t path= 0; ; path++) {
@@ -287,36 +289,36 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		//printf("heuristic %f ", compute_heuristic(workingState, heuristic));
 		
 		if (!open.empty()){
-			currentActions = open.front();
+			current_actions = open.front();
 			open.pop();
-			for (const SearchAction& action : currentActions) {
-				workingState = action.execute(workingState);
+			for (const SearchAction& action : current_actions) {
+				working_state = action.execute(working_state);
 			}
 		}
 		else if (open.empty() && path > 0){ 
 			return {};
 		}
 		
-		std::vector<SearchAction> actions = workingState.actions();		
+		std::vector<SearchAction> actions = working_state.actions();		
 		for (const SearchAction& action: actions) {
 
-			potentionalSolution = currentActions; 
-			potentionalSolution.push_back(action);
+			potentional_solution = current_actions; 
+			potentional_solution.push_back(action);
 			
-			SearchState tempState(init_state); 
-			for (const SearchAction& action : potentionalSolution) {
-				tempState = action.execute(tempState);
+			SearchState temp_state(init_state); 
+			for (const SearchAction& action : potentional_solution) {
+				temp_state = action.execute(temp_state);
 			}
 			
-			if (closed.find(tempState) == closed.end()) {
+			if (closed.find(temp_state) == closed.end()) {
 				
-				if (tempState.isFinal()){
+				if (temp_state.isFinal()){
 					printf("Closed: %ld Open: %ld\n",closed.size(), open.size() );
 					printf("Finnal mem usage %ld KB\n", (getCurrentRSS()/1000)); //TODO REMOVE 
-					return potentionalSolution;
+					return potentional_solution;
 				}
-				closed.insert(tempState);
-				open.push(potentionalSolution);
+				closed.insert(temp_state);
+				open.push(potentional_solution);
 			}
 
 		}
