@@ -96,73 +96,71 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 
 std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state) {
 
-	SearchState working_state(init_state);
 	
 	std::vector<std::vector<SearchAction>> open;
-	std::vector<std::vector<SearchAction>> next_open;
 	std::vector<SearchAction> current_actions;
 	std::vector<SearchAction> actions;
 	std::set<SearchState> closed;
-
+	
 	// init open 
+	SearchState working_state(init_state);
 	actions = working_state.actions();
-	for (const SearchAction& act : actions) {
-		std::vector<SearchAction> new_actions = current_actions;
-		new_actions.push_back(act);
-		open.push_back(new_actions);
+	if (working_state.isFinal()){
+		return {};
 	}
-	printf("Depth: 0 open size: %ld closed size: NONE mem: %ld KB\n",open.size(),(getCurrentRSS()/1000));
+	std::vector<SearchAction> init_actions;
+	for (const SearchAction& act : actions) {
+		init_actions = current_actions;
+		init_actions.push_back(act);
+	}
 
-	for (size_t current_max_depth = 1;
-   current_max_depth <= DepthFirstSearch::depth_limit_; ++current_max_depth) {
+	for (size_t depth = 1; depth <= DepthFirstSearch::depth_limit_; depth++) {
+		std::set<SearchState> closed = {};
+		open.push_back(init_actions);
 		
 		// check if whole row is finnal and them generate new row 
+		int i = 0;
 		while(!open.empty()){
+			i++;
 			SearchState working_state(init_state);
-			current_actions = open.back(); // stack approach 
+			std::vector<SearchAction> current_actions = open.back(); // stack approach 
 			open.pop_back();
 
 			// this approach si slower but much more memory efficent 	
 			for (const SearchAction& action : current_actions) {
 				working_state = action.execute(working_state);
 			}
-
-			actions = working_state.actions();
-			for (const SearchAction& act : actions) {
-				std::vector<SearchAction> new_actions = current_actions;
-				new_actions.push_back(act);
-					
-				SearchState temp_state(init_state);
-				for (const SearchAction& act: new_actions) {
-					temp_state = act.execute(temp_state);
-				} // optimalization // TODO CAUTION this can cause not to find optimal solution 
-				if (temp_state.isFinal() && (current_max_depth+1 <= DepthFirstSearch::depth_limit_)){
-					printf("=========  solution find using optimalization ====== \n");
-					return new_actions;
-				}
-				if (closed.find(temp_state) == closed.end()) {
-					next_open.push_back(new_actions);
-					closed.insert(temp_state); 
+			if (working_state.isFinal()){
+				printf("=========  solution find ====== \n");
+				return current_actions;
+			}
+			if (current_actions.size() <= depth){
+				actions = working_state.actions();
+				for (const SearchAction& act : actions) {
+					std::vector<SearchAction> new_actions = current_actions;
+					new_actions.push_back(act);
+						
+					SearchState temp_state(init_state);
+					for (const SearchAction& act: new_actions) {
+						temp_state = act.execute(temp_state);
+					}  
+					if (closed.find(temp_state) == closed.end()) {
+						open.push_back(new_actions);
+						closed.insert(temp_state); 
+					}
 				}
 			}
 			// mem test // 50MB
 			if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
-				printf("closed: NONE Open: %ld\n", open.size() );
+				printf("closed: %ld Open: %ld\n",closed.size(), open.size() );
 				printf("MEM crash %ld\n KB", (getCurrentRSS()/1000)); //TODO REMOVE 
 				return {};
 			}
 		}
 
 		// clean and iterate 
-		std::vector<std::vector<SearchAction>>().swap(open);
-		open = next_open; 
-		printf("Depth: %ld open size: %ld closed size: %ld mem: %ld KB\n",current_max_depth, open.size(),closed.size(),getCurrentRSS()/1000);
+		printf("Depth: %ld open size: %ld closed size: %ld mem: %ld KB\n",depth, open.size(),closed.size(),getCurrentRSS()/1000);
 		std::vector<SearchAction>().swap(current_actions);
-		std::vector<std::vector<SearchAction>>().swap(next_open);
-		
-		// optimalization 
-		if (current_max_depth+1 > DepthFirstSearch::depth_limit_)
-			break;
 	
 	}
 	// todo memcheck 
