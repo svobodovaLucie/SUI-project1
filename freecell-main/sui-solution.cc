@@ -111,6 +111,7 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 		new_actions.push_back(act);
 		open.push_back(new_actions);
 	}
+	printf("Depth: 0 open size: %ld closed size: NONE mem: %ld KB\n",open.size(),(getCurrentRSS()/1000));
 
 	for (size_t current_max_depth = 1;
    current_max_depth <= DepthFirstSearch::depth_limit_; ++current_max_depth) {
@@ -132,26 +133,38 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 				std::vector<SearchAction> new_actions = current_actions;
 				new_actions.push_back(act);
 					
-				// closed check
 				SearchState temp_state(init_state);
 				for (const SearchAction& act: new_actions) {
 					temp_state = act.execute(temp_state);
-				} // optimalization 
+				} // optimalization // CAUTION this can cause not to find optimal solution 
 				if (temp_state.isFinal() && (current_max_depth+1 <= DepthFirstSearch::depth_limit_)){
 					printf("=========  solution find using optimalization ====== \n");
 					return new_actions;
-				} // closed check 
+				}
 				if (closed.find(temp_state) == closed.end()) {
 					next_open.push_back(new_actions);
 					closed.insert(temp_state); 
 				}
 			}
+			// mem test // 50MB
+			if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
+				printf("closed: NONE Open: %ld\n", open.size() );
+				printf("MEM crash %ld\n KB", (getCurrentRSS()/1000)); //TODO REMOVE 
+				return {};
+			}
 		}
+
 		// clean and iterate 
+		std::vector<std::vector<SearchAction>>().swap(open);
 		open = next_open; 
-		std::vector<SearchAction> current_actions;
-		std::vector<std::vector<SearchAction>> next_open;
-		printf("Depth: %ld open size: %ld closed size: %ld\n",current_max_depth, open.size(), closed.size());
+		printf("Depth: %ld open size: %ld closed size: %ld mem: %ld KB\n",current_max_depth, open.size(),closed.size(),(getCurrentRSS()/1000));
+		std::vector<SearchAction>().swap(current_actions);
+		std::vector<std::vector<SearchAction>>().swap(next_open);
+		
+		// optimalization 
+		if (current_max_depth+1 > DepthFirstSearch::depth_limit_)
+			break;
+	
 	}
 	// todo memcheck 
 		
