@@ -94,10 +94,144 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	return {};
 }
 
-std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state) {
+typedef std::tuple<SearchAction, size_t, SearchState> action_depth_type;
+std::vector<action_depth_type> stack;
+std::vector<action_depth_type> solution_with_depth;
+std::vector<SearchAction> solution;
+
+bool DLS(const SearchState &init_state, size_t max_depth) {
+	SearchState working_state(init_state);
+	std::cout << "DLS\n";
+	while (!stack.empty()) {
+		// pop from the stack to variable ad
+		action_depth_type ad = stack.back();
+		stack.pop_back();
+
+		// pop from solution (there is an old value) until the right depth
+		while (!solution_with_depth.empty() && (std::get<1>(solution_with_depth.back()) >= std::get<1>(ad))) {
+			std::cout << "popping\n";
+			solution_with_depth.pop_back();
+			solution.pop_back();
+		}
+
+		// add current action to solution
+		solution_with_depth.push_back(ad);
+		solution.push_back(std::get<0>(ad));
+
+		std::cout << "CURRENT STATE: \n" << working_state << std::endl;
+		std::cout << "CURRENT ACTION: " << std::get<0>(ad) << ", depth: " << std::get<1>(ad) << std::endl; 
+		
+		// set new working state
+		working_state = (std::get<0>(ad).execute(std::get<2>(ad)));
+		
+		// check final state
+		if (working_state.isFinal()) {
+			// proc tohle nekdy nastane????
+			std::cout << "DLS FINAL - TODO remove" << std::endl;
+			return true;
+		}
+		
+		// check if the current depth is lower or equal to the max depth
+		// if yes, generate new actions from the current state and add them to the stack
+		if (std::get<1>(ad) <= max_depth) {	// < nebo <=
+			std::cout << "FINALIBEFORE:";
+			for (SearchAction &ac: solution) std::cout << ac << ", "; std::cout << "\n";
+			// generate actions from the current working state
+			std::vector <SearchAction> actions = working_state.actions();
+			// execute each action and check if the generated state is not final
+			for (SearchAction &action: actions) {
+				SearchState generated_state(working_state);
+				generated_state = action.execute(generated_state);
+				// check if the state is final
+				if (generated_state.isFinal()) {
+					std::cout << "WORKING_STATE: " << working_state << std::endl;
+					std::cout << "GENERATED_STATE: " << generated_state << std::endl;
+					std::cout << "FINALIONE... action: " << action << ", AD: (" << std::get<0>(ad) << "," << std::get<1>(ad) << "), ";
+					for (SearchAction &ac: solution) std::cout << ac << ", ";
+					std::cout << "\n";
+					std::cout << "WORKING STATE: \n" << generated_state << std::endl;
+					// push the final action to the solution list
+					solution.push_back(action);
+					std::cout << "FINALIFINAL after push: ";
+					for (SearchAction &ac: solution) std::cout << ac << ", "; std::cout << "\n";
+					// return success
+					return true;
+				}
+				// the action was not final -> add the action to the stack with depth = current depth + 1
+				action_depth_type new_ad(action, std::get<1>(ad)+1, working_state);
+				stack.push_back(new_ad);
+			}
+		}
+	}
+	std::cout << "DLS FAILED" << std::endl;
+	return false;
 	
-	return {};
 }
+
+std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state) {
+	std::cout << "==================== NEW PROBLEM ====================\n";
+	SearchState working_state(init_state);
+	std::cout << "Init state: \n" << working_state << std::endl;
+
+	bool result;
+	// run DLS and increment the depth
+	for (size_t current_max_depth = 1; current_max_depth <= DepthFirstSearch::depth_limit_; ++current_max_depth) {
+		// clear potential solutions
+		while(!solution.empty())
+			solution.pop_back();
+
+		while(!solution_with_depth.empty()) 
+			solution_with_depth.pop_back();
+
+		// get all available actions from init state
+		std::vector<SearchAction> actions = working_state.actions();
+		std::cout << "97\n";
+		SearchState generated_state(working_state);
+		// for each action generate a state and check if it is final -> else add to the stack
+		for (SearchAction &action: actions) {
+			// rozgenerovat a checknout
+			generated_state = action.execute(working_state);
+			if (generated_state.isFinal()) {
+				// return solution
+				solution.push_back(action);
+				std::cout << "SUCCESS IN IDS\n";
+				return solution;
+			}
+			std::cout << "not final in IDS\n";
+			// if not final -> push action to the stack
+			action_depth_type ad(action, 1, working_state);
+			stack.push_back(ad);
+		}
+		// run DLS with the current stack and current max depth
+		result = DLS(working_state, current_max_depth);
+		if (result) {
+			std::cout << "SUCCESS" << std::endl;
+			return solution;
+		} else {
+			std::cout << "ELSE..." << std::endl;
+			if (stack.empty()) {
+				// stack is empty -> end the search with empty solution
+				while (!solution.empty())
+					solution.pop_back();
+				break;
+			}
+		}
+	}
+
+	// final debug prints
+	std::cout << "FINAL SOLUTION: ";
+	for (SearchAction &action: solution) std::cout << action << ", " << std::endl;
+
+	std::cout << "FINAL SOLUTION_DEPTH: ";
+	for (action_depth_type &action: solution_with_depth) std::cout << std::get<0>(action) << " (depth: " << std::get<1>(action) << "), " << std::endl;
+
+	std::cout << "FINAL STATE:\n" << working_state << std::endl;
+
+	std::cout << "END OF IDS\n";
+
+	return solution;
+}
+
 
 double StudentHeuristic::distanceLowerBound(const GameState &state) const {
 		// todo distance to next card that can be in home_dest  
