@@ -140,16 +140,7 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 				for (const SearchAction& act : actions) {
 					std::vector<SearchAction> new_actions = current_actions;
 					new_actions.push_back(act);
-						
-					SearchState temp_state(init_state);
-					for (const SearchAction& act: new_actions) {
-						temp_state = act.execute(temp_state);
-					}  
 					open.push_back(new_actions);
-					if (closed.find(temp_state) == closed.end()) {
-						open.push_back(new_actions);
-						closed.insert(temp_state); 
-					}
 				}
 			}
 			// mem test // 50MB
