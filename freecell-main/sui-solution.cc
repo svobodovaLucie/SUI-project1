@@ -123,20 +123,20 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 		open.push_back(init_actions);
 		
 		while(!open.empty()){
-			SearchState working_state(init_state);
+			SearchState temp_state(init_state);
 			std::vector<SearchAction> current_actions = open.back(); // stack approach 
 			open.pop_back();
 
 			// this approach si slower but much more memory efficent 	
 			for (const SearchAction& action : current_actions) {
-				working_state = action.execute(working_state);
+				temp_state = action.execute(temp_state);
 			}
-			if (working_state.isFinal()){
-				printf("=========  solution find DEPTH: %ld ============= \n\n", current_actions.size());
+			if (temp_state.isFinal()){
+				printf("=========  solution found DEPTH: %ld ============= \n\n", current_actions.size());
 				return current_actions;
 			}
 			if (current_actions.size() < depth){
-				actions = working_state.actions();
+				actions = temp_state.actions();
 				for (const SearchAction& act : actions) {
 					std::vector<SearchAction> new_actions = current_actions;
 					new_actions.push_back(act);
