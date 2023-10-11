@@ -101,7 +101,7 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 	std::vector<std::vector<SearchAction>> open;
 	std::vector<SearchAction> current_actions;
 	std::vector<SearchAction> actions;
-	std::set<SearchState> closed;
+	std::vector<std::vector<SearchAction>> init_actions;
 	
 	// init open 
 	SearchState working_state(init_state);
@@ -109,19 +109,19 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 	if (working_state.isFinal()){
 		return {};
 	}
-	std::vector<SearchAction> init_actions;
+
 	for (const SearchAction& act : actions) {
-		init_actions = current_actions;
-		init_actions.push_back(act);
+		std::vector<SearchAction> action;
+		action.push_back(act);
+		init_actions.push_back(action);
 	}
 	
 	size_t depth = 1;
 	printf("==================== BEGIN =================\n");
 	for (;depth <= DepthFirstSearch::depth_limit_; depth++) {
-		printf("Depth: %ld open size: %ld closed size: %ld mem: %ld KB\n",depth, open.size(),closed.size(),getCurrentRSS()/1000);
-		std::set<SearchState> closed = {};
-		open.push_back(init_actions);
-		
+		printf("Depth: %ld open size: %ld closed size: NONE mem: %ld KB\n",depth, open.size(),getCurrentRSS()/1000);
+		open = init_actions;
+
 		while(!open.empty()){
 			SearchState temp_state(init_state);
 			std::vector<SearchAction> current_actions = open.back(); // stack approach 
@@ -145,7 +145,7 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 			}
 			// mem test // 50MB
 			if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
-				printf("closed: %ld Open: %ld\n",closed.size(), open.size() );
+				printf("closed: NONE Open: %ld\n", open.size() );
 				printf("MEM crash %ld KB\n", (getCurrentRSS()/1000)); //TODO REMOVE 
 				return {};
 			}
