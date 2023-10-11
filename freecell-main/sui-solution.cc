@@ -2,13 +2,23 @@
 #include "mem_watch.h"
 #include "memusage.h"
 
+
 #include <queue>
 #include <algorithm>
 #include <set>
-
+#include <iostream>
+#include <sstream>
 
 #define BFS_MEM_LIMIT_BYTES 50000000 //50MB
 
+size_t hash(const SearchState &state){
+
+	std::stringstream ss;
+	ss << state;
+  std::string state_string = ss.str();
+	return std::hash<std::string>{}(state_string);
+
+}
 
 std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_state) {
 
@@ -18,14 +28,15 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	// [(S,D),(S,C),(S,B),(S,A)] 
 	std::queue<std::vector<SearchAction>> open;
 
-	// Finall solution vector  
+	// Final solution vector  
 	std::vector<SearchAction> solution;
 
 	// vector with currently processed actions 	
 	std::vector<SearchAction> current_actions;
 
 	// CLOSED 
-	std::set<SearchState> closed;
+	std::set<size_t> closed;
+	size_t hash_num = 0;
 
 	// 	helping variable 
 	std::vector<SearchAction> temp_actions; 
@@ -33,7 +44,7 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	// look ahead buffer for optimalization
 	std::vector<SearchAction> potentional_solution; 
 	bool found_potential = false;
-	long unsigned int height = 0; 
+	long unsigned int depth = 0; 
 	
 	// init open 
 	SearchState working_state(init_state);
@@ -65,12 +76,12 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 			return current_actions;
 		}
 		// optimalization 
-		if (current_actions.size() > height){
+		if (current_actions.size() > depth){
 			if (found_potential == true){
 				return potentional_solution;
 			}
 			found_potential = false;
-			height++;
+			depth++;
 		}
 		
 		// ... GENERATE NEXT STATES and expand them 
@@ -84,8 +95,9 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 			for (const SearchAction& action : temp_actions) {
 				temp_state = action.execute(temp_state);
 			}
+			hash_num = hash(temp_state);
 			// IF state is already in closed dont expand 
-			if (closed.find(temp_state) == closed.end()) {
+			if (closed.find(hash_num) == closed.end()) {
 				// optimalization - if currently expanded node is already a solution	
 				if (found_potential == false){
 					if (temp_state.isFinal()){
@@ -94,17 +106,15 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 					}
 				}
 				// store action vector to queue
-				closed.insert(temp_state);
+				closed.insert(hash_num);
 				open.push(temp_actions);
 			}
 		}
-
 		// mem test // 50MB
 		if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
 			return {};
 		}
 	}
-
 	return {};
 }
 
