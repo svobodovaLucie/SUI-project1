@@ -71,8 +71,10 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 				
 				// Check if currently expanded node is already a solution	
 				if (temp_state.isFinal()){
-					printf("Closed: %ld Open: %ld\n",closed.size(), open.size() );
-					printf("Finnal mem usage %ld KB\n", (getCurrentRSS()/1000)); //TODO REMOVE 
+					printf("Closed: %ld Open: %ld",closed.size(), open.size() );
+					printf(" Finnal mem usage %ld KB", (getCurrentRSS()/1000)); //TODO REMOVE
+					printf(" SOLUTION DEPTH %ld\n", potentional_solution.size()); //TODO REMOVE
+
 					return potentional_solution;
 				}
 				
@@ -85,8 +87,8 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 
 		// mem test // 50MB
 		if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
-			printf("Closed: %ld Open: %ld\n",closed.size(), open.size() );
-			printf("MEM crash %ld\n KB", (getCurrentRSS()/1000)); //TODO REMOVE 
+			printf("Closed: %ld Open: %ld ",closed.size(), open.size() );
+			printf("MEM crash %ld KB\n", (getCurrentRSS()/1000)); //TODO REMOVE 
 			return {};
 		}
 	}
@@ -96,7 +98,6 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 
 std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state) {
 
-	
 	std::vector<std::vector<SearchAction>> open;
 	std::vector<SearchAction> current_actions;
 	std::vector<SearchAction> actions;
@@ -113,15 +114,15 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 		init_actions = current_actions;
 		init_actions.push_back(act);
 	}
-
-	for (size_t depth = 1; depth <= DepthFirstSearch::depth_limit_; depth++) {
+	
+	size_t depth = 1;
+	printf("==================== BEGIN =================\n");
+	for (;depth <= DepthFirstSearch::depth_limit_; depth++) {
+		printf("Depth: %ld open size: %ld closed size: %ld mem: %ld KB\n",depth, open.size(),closed.size(),getCurrentRSS()/1000);
 		std::set<SearchState> closed = {};
 		open.push_back(init_actions);
 		
-		// check if whole row is finnal and them generate new row 
-		int i = 0;
 		while(!open.empty()){
-			i++;
 			SearchState working_state(init_state);
 			std::vector<SearchAction> current_actions = open.back(); // stack approach 
 			open.pop_back();
@@ -131,10 +132,10 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 				working_state = action.execute(working_state);
 			}
 			if (working_state.isFinal()){
-				printf("=========  solution find ====== \n");
+				printf("=========  solution find DEPTH: %ld ============= \n\n", current_actions.size());
 				return current_actions;
 			}
-			if (current_actions.size() <= depth){
+			if (current_actions.size() < depth){
 				actions = working_state.actions();
 				for (const SearchAction& act : actions) {
 					std::vector<SearchAction> new_actions = current_actions;
@@ -144,6 +145,7 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 					for (const SearchAction& act: new_actions) {
 						temp_state = act.execute(temp_state);
 					}  
+					open.push_back(new_actions);
 					if (closed.find(temp_state) == closed.end()) {
 						open.push_back(new_actions);
 						closed.insert(temp_state); 
@@ -153,20 +155,15 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 			// mem test // 50MB
 			if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
 				printf("closed: %ld Open: %ld\n",closed.size(), open.size() );
-				printf("MEM crash %ld\n KB", (getCurrentRSS()/1000)); //TODO REMOVE 
+				printf("MEM crash %ld KB\n", (getCurrentRSS()/1000)); //TODO REMOVE 
 				return {};
 			}
 		}
-
 		// clean and iterate 
-		printf("Depth: %ld open size: %ld closed size: %ld mem: %ld KB\n",depth, open.size(),closed.size(),getCurrentRSS()/1000);
 		std::vector<SearchAction>().swap(current_actions);
 	
 	}
-	// todo memcheck 
-		
-	std::cout << "==================== Depth limit ====================\n";
-
+	printf("==================== Depth limit %ld ====================\n\n", depth-1);
 	return {};
 }
 
