@@ -11,6 +11,7 @@
 #include <string>
 
 #define BFS_MEM_LIMIT_BYTES 50000000 //50MB
+#define AST_MEM_LIMIT_BYTES  1000000 //20MB
 
 size_t hash(const SearchState &state){
 
@@ -115,6 +116,7 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 		}
 		// mem test // 50MB
 		if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
+			std::cout << "Solution found in depth: - (mem max, ended in depth: " << depth << ")" << std::endl;
 			return {};
 		}
 	}
@@ -279,11 +281,15 @@ double StudentHeuristic::distanceLowerBound(const GameState &state) const {
 		std::array<WorkStack, nb_stacks> work_stacks = state.stacks;
 		// Get throughout home_dest and count the penalisation 
 		double result = 0.0;
+		int free_stacks = 0;
 		for (WorkStack& stack : work_stacks) {
 			// std::cout << "work stack " << i++ << ": ";
 			std::vector<Card> cards_on_stack = stack.storage();
 			size_t num_of_cards_on_stack = cards_on_stack.size();
 			std::stringstream cards_on_work_stack;
+			if (num_of_cards_on_stack == 0) {
+				free_stacks++;
+			}
 			for (size_t i = 0; i < num_of_cards_on_stack; i++) {
 				Card card = cards_on_stack[i]; 
 				std::stringstream card_info;
@@ -311,6 +317,27 @@ double StudentHeuristic::distanceLowerBound(const GameState &state) const {
 
 		// std::cout << "heuristic: " << result << std::endl;
 		// result = 0;
+
+		// find out the number of free cells
+		std::array<FreeCell, 4UL> cells = state.free_cells;
+		int full_cells = 0;
+		for (int i = 0; i < 4; i++) {
+			try {
+					if (cells[i].topCard()) {
+						full_cells++;
+					}
+			}
+			catch(const std::exception& e) {
+				// no card == free cell
+				;
+			}
+		}
+
+		result;// += full_cells; // + free_stacks;
+	
+		// std::cout << "state:\n" << state << "full cells: " << full_cells << std::endl;
+		// std::array<FreeCell, 4UL> x = state.free_cells;
+		// x[0].~CardStorage
 		return result/2.0;
 }
 typedef std::tuple<double, std::vector<SearchAction>> rated_actions;
@@ -344,6 +371,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 	// closed pouzijeme tak, ze si do closed budeme ukladat hash+hodnotu, ktera je ulozena 
 	// 
 	std::set<size_t> closed;
+	// std::set<std::tuple<size_t, double>> closed;
 	size_t hash_num = 0;
 
 	// helper variable
@@ -354,11 +382,12 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 
 	// heuristic variable
 	double heuristic;
+
 	// look ahead buffer - I think it is not valid to use it in A*, 
 	// but maybe for our simle heuristics it is ok TODO
-	// std::vector<SearchAction> potential_solution; 
-	// bool found_potential = false;
-	// long unsigned int depth = 0; 
+	std::vector<SearchAction> potential_solution; 
+	bool found_potential = false;
+	long unsigned int depth = 0; 
 	
 	// check if the init state is not final
 	SearchState working_state(init_state);
@@ -377,7 +406,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		next_state = act.execute(init_state);
 		// check if the next state is final
 		if (next_state.isFinal()) {
-			std::cout << "Potential solution found in depth: " << current_actions.size() + 1 << std::endl;
+			// std::cout << "Potential solution found in depth: " << current_actions.size() + 1 << std::endl;
 			// TODO maybe add to potential solution
 		}
 		// std::cout << next_state << std::endl;
@@ -417,6 +446,19 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 			return current_actions;
 		}
 		
+		// optimalization 
+		// /*
+		if (current_actions.size() > depth){
+			if (found_potential == true){
+				std::cout << "Potential solution returned in depth: " << current_actions.size() << std::endl;
+				return potential_solution;
+			}
+			found_potential = false;
+			depth++;
+			// depth = current_actions.size();		// TODO check
+		}
+		// */
+
 		// generate next actions and expand the current path
 		expand_actions = working_state.actions();	
 		
@@ -427,26 +469,41 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 
 			// execute the next state
 			SearchState next_state(init_state); 
-			for (const SearchAction& act : current_actions) {
+			for (const SearchAction& act : temp_actions) {
 				next_state = act.execute(next_state);
 			}
-			if (next_state.isFinal()) {
-					std::cout << "Potential solution found in depth: " << current_actions.size() + 1 << std::endl;
-					// TODO maybe add to potential solution
-					// return {};
+			// if (next_state.isFinal()) {
+			// 		std::cout << "Potential solution found in depth: " << current_actions.size() + 1 << std::endl;
+			// 		// TODO maybe add to potential solution
+			// 		// return {};
+			// }
+
+			// compute the hash
+			hash_num = hash(next_state);
+
+			// check closed
+			if (closed.find(hash_num) == closed.end()) {	// not found
+				// optimalization - check if currently expanded node is already a solution	
+				// /*
+				if (found_potential == false){
+					if (next_state.isFinal()){
+						// std::cout << "Potential solution found in depth: " << current_actions.size() + 1 << std::endl;
+						potential_solution = temp_actions;
+						found_potential = true;
+					}
+				}
+				// */
+				// compute heuristic for the next state
+				heuristic = compute_heuristic(next_state, *heuristic_);
+				heuristic = 0 - heuristic - current_actions.size() - 1.0; // delka cesty
+				t = std::make_tuple(heuristic, temp_actions);
+
+				// add the new rated action to the priority queue
+				closed.insert(hash_num);
+				pq_open.push(t);
 			}
-
-			// compute heuristic for the next state
-			// std::cout << next_state << std::endl;
-			// std::cout << next_state << std::endl;
-			heuristic = compute_heuristic(next_state, *heuristic_);
-			heuristic = 0 - heuristic - current_actions.size() - 1.0; // delka cesty
-			t = std::make_tuple(heuristic, temp_actions);
-			// add the new rated action to the priority queue
-			pq_open.push(t);	// TODO dela problem s assertem
-			// std::cout << "y";
+			// std::cout << "open: " << pq_open.size() << ", closed: " << closed.size() << std::endl;
 		}
-
 		/*
 		std::priority_queue<rated_actions, std::vector<rated_actions>, comparator> pq_tmp;
 		pq_tmp = pq_open;
@@ -463,11 +520,21 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		*/
 		// }
 		next_values_computed = false;
+
+		if ((size_t)getCurrentRSS() > mem_limit_ - AST_MEM_LIMIT_BYTES) {
+			std::cout << "Solution found in depth: - (mem max, ended in depth: " << depth << ")" << std::endl;
+			return {};
+		}
 	}
 	
-	if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
-		return {};
-	}
+	// if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
+	// 	return {};
+	// }
+	// mem test // 50MB
+	// if ((size_t)getCurrentRSS() > mem_limit_ - AST_MEM_LIMIT_BYTES) {
+	// 	std::cout << "Solution found in depth: - (mem max, ended in depth: )" << depth << std::endl;
+	// 	return {};
+	// }
 	return {};
 }
 	// return {};
