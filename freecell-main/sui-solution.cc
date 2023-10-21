@@ -1,8 +1,15 @@
+/*
+ * File:         sui-solution.cc
+ * Institution:  FIT BUT 2023/2024
+ * Course:       SUI - Artificial Intelligence and Machine Learning
+ * Authors:      Lucie Svobodová, xsvobo1x@stud.fit.vutbr.cz
+ *               Jakub Kuzník, xkuzni04@stud.fit.vutbr.cz
+ * 
+ * Implementation of BFS, DFS and A* algorithms, and A* heuristic.
+ */
 #include "search-strategies.h"
 #include "mem_watch.h"
 #include "memusage.h"
-
-
 #include <queue>
 #include <algorithm>
 #include <set>
@@ -11,19 +18,16 @@
 #include <string>
 
 #define BFS_MEM_LIMIT_BYTES 50000000 //50MB
-#define AST_MEM_LIMIT_BYTES  1000000 //20MB
+#define AST_MEM_LIMIT_BYTES 50000000 //50MB
 
 size_t hash(const SearchState &state){
-
-	std::stringstream ss;
-	ss << state;
-  std::string state_string = ss.str();
-	return std::hash<std::string>{}(state_string);
-
+	// creates hash from state as a string
+	std::stringstream state_string;
+	state_string << state;
+	return std::hash<std::string>{}(state_string.str());
 }
 
 std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_state) {
-
 	// OPEN: queue with next states 
 	//            S 
 	//       A   B  C  D
@@ -40,7 +44,7 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	std::set<size_t> closed;
 	size_t hash_num = 0;
 
-	// 	helping variable 
+	//	helper variable 
 	std::vector<SearchAction> temp_actions; 
 
 	// look ahead buffer for optimalization
@@ -182,179 +186,104 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 	return {};
 }
 
-double ooo = 0.001;
-
 bool next_values_computed = false;
-std::vector<std::string> next_cards = {"0","0","0","0"};
+std::string next_cards_string;
 
-std::vector<std::string> find_next_cards_values(const GameState &state) {
-	// std::vector<std::string> 
-	next_cards = {"0", "0", "0", "0"};	// h,d,s,c
-	// std::vector<int> next_cards_numbers = {0,0,0,0};	// h,d,s,c
-
+void find_next_cards_values(const GameState &state) {
 	// find out the next cards values
 	std::array<HomeDestination, nb_homes> home_stacks;
-	// std::cout << "kks: " << state.homes[3].topCard().value() << std::endl;
-	// initialize the homes with 0
-	// next_cards = {0h, 0d, 0s, 0c};
+	std::vector<int> current_cards_values = {0,0,0,0};
 	for (int i = 0; i < 4; i++){
 		if (state.homes[i].topCard().has_value()){
-			std::stringstream card_value_str;
-			card_value_str << state.homes[i].topCard().value();
-			std::string without_last_char = card_value_str.str();	// for storing the number onlu
-			without_last_char.pop_back();
-			switch (card_value_str.str().back()) {
-				case 'h':				
-					next_cards[0] = without_last_char;
+			switch (state.homes[i].topCard().value().color) {
+				case Color::Heart:
+					current_cards_values[0] = state.homes[i].topCard().value().value;
 					break;
-				case 'd':				
-					next_cards[1] = without_last_char;
+				case Color::Diamond:
+					current_cards_values[1] = state.homes[i].topCard().value().value;
 					break;
-				case 's':				
-					next_cards[2] = without_last_char;
+				case Color::Spade:
+					current_cards_values[2] = state.homes[i].topCard().value().value;
 					break;
-				default:
-					next_cards[3] = without_last_char;
+				case Color::Club:
+					current_cards_values[3] = state.homes[i].topCard().value().value;
 					break;
 			}
-			// next_cards[i] = card_value_str.str();
 		}
 	}
-	
-	// next_cards = {0h,1d,2s,0c}	// example
-	int val;
+
+	std::vector<std::string> colors = {"h","d","s","c"};
+	next_cards_string = "";
+	// convert vector of integers to a string with incremented values for each color
 	for (int i = 0; i < 4; i++) {
-			try {
-				val = stoi(next_cards[i]);
-				if (val == 11) // 10 -> J
-					next_cards[i] = "J";
-				else {
-					val++;
-					next_cards[i] = std::to_string(val);
-				}
-			} catch(const std::exception& e) {
-				std::string x = next_cards[i];
-				// std::cout << "bef x: " << x << std::endl;
-				x.pop_back();
-				// std::cout << "aft x: " << x << std::endl;
-				if (x == "J") // J -> Q
-					next_cards[i] = "Q";
-				else	// Q, K -> K
-					next_cards[i] = "K";
+		// convert values bigger than 10 to J/Q/K
+		if (current_cards_values[i] >= 10) {
+			switch (current_cards_values[i]) {
+			case 10:
+				next_cards_string += "J";
+				break;
+			case 11:
+				next_cards_string += "Q";
+				break;
+			default:
+				next_cards_string += "K";
+				break;
 			}
-			// std::cout << "string: " << next_cards[i] << ", int: " << val << std::endl;
+		} else {
+			// increment the value and append it to the string
+			current_cards_values[i]++;
+			next_cards_string += std::to_string(current_cards_values[i]);
 		}
-
-		// add the h,d,c,s
-		next_cards[0].append("h");
-		next_cards[1].append("d");
-		next_cards[2].append("s");
-		next_cards[3].append("c");
-
-		// std::cout << "to be found in state: " << std::endl << state << "cards to be found: ";
-		// for (int i = 0; i < 4; i++) {
-		// 	std::cout << next_cards[i] << ", ";
-		// }
-		// std::cout << std::endl << std::endl;
-
-	return next_cards;
-
+		// append the color
+		next_cards_string += colors[i];
+	}
 }
 
 double StudentHeuristic::distanceLowerBound(const GameState &state) const {
-
 	// compute the values of next cards on home stacks
 	if (!next_values_computed) {
-		next_cards = find_next_cards_values(state);
+		find_next_cards_values(state);
 		next_values_computed = true;
 	}
 
-	// std::cout << "Next Cards Values: " << std::endl;
-	std::stringstream next_cards_string;
-	for (int i = 0; i < 4; i++) {
-		// std::cout << next_cards[i] << ", ";
-		next_cards_string << next_cards[i];
-	}
-
-	// go through the work stacks and find the cards
-		std::stringstream ss;
-		std::array<WorkStack, nb_stacks> work_stacks = state.stacks;
-		// Get throughout home_dest and count the penalisation 
-		double result = 0.0;
-		int free_stacks = 0;
-		for (WorkStack& stack : work_stacks) {
-			// std::cout << "work stack " << i++ << ": ";
-			std::vector<Card> cards_on_stack = stack.storage();
-			size_t num_of_cards_on_stack = cards_on_stack.size();
-			std::stringstream cards_on_work_stack;
-			if (num_of_cards_on_stack == 0) {
-				free_stacks++;
-			}
-			for (size_t i = 0; i < num_of_cards_on_stack; i++) {
-				Card card = cards_on_stack[i]; 
-				std::stringstream card_info;
-				card_info << card;
-				cards_on_work_stack << card;
-				int card_value = card.value;
-
-				size_t found = next_cards_string.str().find(card_info.str());
-				if (found != std::string::npos) {
-					// found
-					// std::cout << "FOUND! i=" << i << ",card on work stack: " << card_info.str()
-					// << ", cards to find: " << next_cards_string.str() << std::endl; 
-					double manhattan_diff = num_of_cards_on_stack - i - 1.0;
-					// std::cout << "manhattan_diff: " << manhattan_diff << std::endl;
-					result += manhattan_diff;
+	std::array<WorkStack, nb_stacks> work_stacks = state.stacks;
+	double result = 0.0;
+	int cards_found = 0;
+	// iterate through the work stacks and find the wanted cards
+	for (WorkStack& stack : work_stacks) {
+		std::vector<Card> cards_on_stack = stack.storage();
+		size_t num_of_cards_on_stack = cards_on_stack.size();
+		// check each card on the stack if it is the one to be found
+		for (size_t i = 0; i < num_of_cards_on_stack; i++) {
+			std::stringstream card_info;
+			card_info << cards_on_stack[i];
+			size_t found = next_cards_string.find(card_info.str());
+			if (found != std::string::npos) {
+				// found
+				result += num_of_cards_on_stack - i - 1.0;
+				if (cards_found >= 3) {
+					return result;
 				}
-				// std::cout << "card value: " << card_value << ", sss: " << sss.str() << std::endl;
-			}
-			// std::cout << "cards_on_work_stack: " << cards_on_work_stack.str() << std::endl;
-			// if (num_of_cards_on_stack > 0) {
-			// 	std::cout << "top card: " << stack.storage().back() << std::endl;
-			// }
-
-		}
-
-		// std::cout << "heuristic: " << result << std::endl;
-		// result = 0;
-
-		// find out the number of free cells
-		std::array<FreeCell, 4UL> cells = state.free_cells;
-		int full_cells = 0;
-		for (int i = 0; i < 4; i++) {
-			try {
-					if (cells[i].topCard()) {
-						full_cells++;
-					}
-			}
-			catch(const std::exception& e) {
-				// no card == free cell
-				;
+				cards_found++;
 			}
 		}
-
-		result;// += full_cells; // + free_stacks;
-	
-		// std::cout << "state:\n" << state << "full cells: " << full_cells << std::endl;
-		// std::array<FreeCell, 4UL> x = state.free_cells;
-		// x[0].~CardStorage
-		return result/2.0;
+	}
+	return result;
 }
+
+// type used for the priority queue used in A*
 typedef std::tuple<double, std::vector<SearchAction>> rated_actions;
 class comparator {
 	public:
 		bool operator()(const rated_actions &lhs, const rated_actions &rhs) {
 			double lhs_fst = std::get<0>(lhs);
 			double rhs_fst = std::get<0>(rhs);
-			// std::cout << "got lhs_fst: " << lhs_fst << ", rhs_first: " << rhs_fst << std::endl;
-			// return lhs_fst <= rhs_fst;	// <= zajisti, ze se ukladaji prvky jako fronta a ne stack
 			return lhs_fst <= rhs_fst;
 		}
 };
 
-std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
-	// A* uses BFS that is better documented in BreadthFirstSearch::solve 
 
+std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 	// priority queue used as open
 	std::priority_queue<rated_actions, std::vector<rated_actions>, comparator> pq_open;
 
@@ -367,37 +296,25 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 	// actions that has led to the current working state
 	std::vector<SearchAction> current_actions;
 
-	// closed - is it valid to use it with A*? TODO
-	// closed pouzijeme tak, ze si do closed budeme ukladat hash+hodnotu, ktera je ulozena 
-	// 
+	// closed list
 	std::set<size_t> closed;
-	// std::set<std::tuple<size_t, double>> closed;
 	size_t hash_num = 0;
 
 	// helper variable
 	std::vector<SearchAction> temp_actions; 
 
-	// vector for storing the values of nearest cards to be pushed to home stacks
-	std::vector<std::string> next_cards_values;
-
 	// heuristic variable
 	double heuristic;
 
-	// look ahead buffer - I think it is not valid to use it in A*, 
-	// but maybe for our simle heuristics it is ok TODO
-	std::vector<SearchAction> potential_solution; 
-	bool found_potential = false;
-	long unsigned int depth = 0; 
-	
 	// check if the init state is not final
 	SearchState working_state(init_state);
 	if (working_state.isFinal()){
 		return {};
 	}
 
-	// std::cout << "3";
-	// init the open priority queue
+	// initialise the open priority queue
 	std::vector<SearchAction> expand_actions = working_state.actions();
+	// add each action executable from the init state to the actions
 	for (const SearchAction& act : expand_actions) {
 		std::vector<SearchAction> action;
 		action.push_back(act);
@@ -406,136 +323,76 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		next_state = act.execute(init_state);
 		// check if the next state is final
 		if (next_state.isFinal()) {
-			// std::cout << "Potential solution found in depth: " << current_actions.size() + 1 << std::endl;
-			// TODO maybe add to potential solution
+			std::cout << "Potential solution returned in depth: " << current_actions.size() << std::endl;
+			return action;
 		}
-		// std::cout << next_state << std::endl;
 		heuristic = compute_heuristic(next_state, *heuristic_);
-		heuristic = 0 - heuristic - current_actions.size() - 1.0; // delka cesty
+		heuristic = 0 - (heuristic/2.0) - current_actions.size() - 1.0; // delka cesty, heuristiky jsou zaporne
 		t = make_tuple(heuristic, action);
-		// add the new rated action to the priority queue
+		// push the new rated action to the priority queue
 		pq_open.push(t);
 	}
+	// no need to recalculate the card values for current state
 	next_values_computed = false;
 
-	// std::cout << std::endl << pq_open.size() << std::endl;
-
-	int i = 0;
-	// repeat until the queue is not empty
+	// repeat until the queue is not empty or until the solution is found
 	while (!pq_open.empty()) {
-		// if ( i++ > 3 ) return {};
-	
+
 		// get the top rated actions
 		t = pq_open.top();
 		pq_open.pop();
 		current_actions = std::get<1>(t);
 
-		// std::cout << "pq size: " << pq_open.size() << ", current depth: " << current_actions.size() << std::endl;
-
 		// execute actions from the init state
 		SearchState working_state(init_state);
-		
 		for (const SearchAction &action: current_actions) {
 			working_state = action.execute(working_state);
 		}
 			
+		// TODO remove
 		// check if the current state is final
 		if (working_state.isFinal()){
 			std::cout << "Real solution returned in depth: " << current_actions.size() << std::endl;
-			// std::cout << "final_state:\n" << working_state << std::endl;
 			return current_actions;
 		}
-		
-		// optimalization 
-		// /*
-		if (current_actions.size() > depth){
-			if (found_potential == true){
-				std::cout << "Potential solution returned in depth: " << current_actions.size() << std::endl;
-				return potential_solution;
-			}
-			found_potential = false;
-			depth++;
-			// depth = current_actions.size();		// TODO check
-		}
-		// */
 
 		// generate next actions and expand the current path
 		expand_actions = working_state.actions();	
 		
-		// add each action in expand_actions to current_actions+action vector and push it to the open queue
+		// add each action in expand_actions to current_actions
 		for (const SearchAction& a: expand_actions) {
 			temp_actions = current_actions; 
 			temp_actions.push_back(a);
-
 			// execute the next state
 			SearchState next_state(init_state); 
 			for (const SearchAction& act : temp_actions) {
 				next_state = act.execute(next_state);
 			}
-			// if (next_state.isFinal()) {
-			// 		std::cout << "Potential solution found in depth: " << current_actions.size() + 1 << std::endl;
-			// 		// TODO maybe add to potential solution
-			// 		// return {};
-			// }
+			// check if the next state is final
+			if (next_state.isFinal()) {
+					std::cout << "Potential solution found in depth: " << current_actions.size() + 1 << std::endl;
+					return temp_actions;
+			}
 
-			// compute the hash
+			// compute the hash and check closed list
 			hash_num = hash(next_state);
-
-			// check closed
 			if (closed.find(hash_num) == closed.end()) {	// not found
-				// optimalization - check if currently expanded node is already a solution	
-				// /*
-				if (found_potential == false){
-					if (next_state.isFinal()){
-						// std::cout << "Potential solution found in depth: " << current_actions.size() + 1 << std::endl;
-						potential_solution = temp_actions;
-						found_potential = true;
-					}
-				}
-				// */
 				// compute heuristic for the next state
 				heuristic = compute_heuristic(next_state, *heuristic_);
-				heuristic = 0 - heuristic - current_actions.size() - 1.0; // delka cesty
+				heuristic = 0 - (heuristic*(current_actions.size())/2.0) - current_actions.size() - 1.0; // delka cesty
 				t = std::make_tuple(heuristic, temp_actions);
-
-				// add the new rated action to the priority queue
-				closed.insert(hash_num);
+				// push the new rated action to the priority queue and to the closed list
 				pq_open.push(t);
+				closed.insert(hash_num);
 			}
-			// std::cout << "open: " << pq_open.size() << ", closed: " << closed.size() << std::endl;
 		}
-		/*
-		std::priority_queue<rated_actions, std::vector<rated_actions>, comparator> pq_tmp;
-		pq_tmp = pq_open;
-		std::cout << "pq before: \n";
-		int l = 0;
-		while (!pq_tmp.empty()) {
-		// while (l < 2) {
-			rated_actions t = pq_tmp.top();
-			std::cout << std::get<0>(t) << ", ";
-			pq_tmp.pop();
-			l++;
-		}
-		std::cout << std::endl;
-		*/
-		// }
+		// new state -> need to recompute the card values
 		next_values_computed = false;
 
 		if ((size_t)getCurrentRSS() > mem_limit_ - AST_MEM_LIMIT_BYTES) {
-			std::cout << "Solution found in depth: - (mem max, ended in depth: " << depth << ")" << std::endl;
+			std::cout << "Solution not found" << std::endl;
 			return {};
 		}
 	}
-	
-	// if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
-	// 	return {};
-	// }
-	// mem test // 50MB
-	// if ((size_t)getCurrentRSS() > mem_limit_ - AST_MEM_LIMIT_BYTES) {
-	// 	std::cout << "Solution found in depth: - (mem max, ended in depth: )" << depth << std::endl;
-	// 	return {};
-	// }
 	return {};
 }
-	// return {};
-// }
