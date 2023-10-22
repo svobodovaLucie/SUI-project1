@@ -18,7 +18,7 @@
 #include <string>
 
 #define BFS_MEM_LIMIT_BYTES 50000000 //50MB
-#define AST_MEM_LIMIT_BYTES 50000000 //50MB
+#define AST_MEM_LIMIT_BYTES 10000000 //50MB
 
 size_t hash(const SearchState &state){
 	// creates hash from state as a string
@@ -333,7 +333,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 			return action;
 		}
 		heuristic = compute_heuristic(next_state, *heuristic_);
-		heuristic = 0 - (heuristic) - current_actions.size() - 1.0; // delka cesty, heuristiky jsou zaporne
+		heuristic = 0 - heuristic - current_actions.size() - 1.0; // delka cesty, heuristiky jsou zaporne
 		t = make_tuple(heuristic, action);
 		// push the new rated action to the priority queue
 		pq_open.push(t);
@@ -354,13 +354,6 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		for (const SearchAction &action: current_actions) {
 			working_state = action.execute(working_state);
 		}
-			
-		// TODO remove
-		// check if the current state is final
-		// if (working_state.isFinal()){
-		// 	std::cout << "Real solution returned in depth: " << current_actions.size() << std::endl;
-		// 	return current_actions;
-		// }
 
 		// generate next actions and expand the current path
 		expand_actions = working_state.actions();	
@@ -385,7 +378,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 			if (closed.find(hash_num) == closed.end()) {	// not found
 				// compute heuristic for the next state
 				heuristic = compute_heuristic(next_state, *heuristic_);
-				heuristic = 0 - (heuristic/current_actions.size()) - current_actions.size() - 1.0; // delka cesty
+				heuristic = 0 - heuristic - current_actions.size() - 1.0; // delka cesty
 				t = std::make_tuple(heuristic, temp_actions);
 				// push the new rated action to the priority queue and to the closed list
 				pq_open.push(t);
