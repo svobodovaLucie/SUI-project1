@@ -120,10 +120,11 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 			}
 		}
 		// mem test // 50MB
-		if (!(mem_cnt++ % 100)) {
+		if (mem_cnt++ == 100) {
 			if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
 				return {};
 			}
+			mem_cnt = 0;
 		}
 	}
 	return {};
@@ -387,11 +388,12 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		next_values_computed = false;
 
 		// mem test // 10MB
-		if (!(mem_cnt++ % 100)) {
+		if ((mem_cnt++ == 100)) {
 			if ((size_t)getCurrentRSS() > mem_limit_ - AST_MEM_LIMIT_BYTES) {
 				std::cout<<"solution: not found"<<std::endl;
 				return {};
 			}
+			mem_cnt = 0;
 		}
 	}
 	return {};
