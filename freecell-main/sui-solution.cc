@@ -55,7 +55,6 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	// init open 
 	SearchState working_state(init_state);
 	if (working_state.isFinal()){
-		std::cout << "Real solution returned in depth: 0" << std::endl;
 		return {};
 	}
 	// first expand 
@@ -80,13 +79,11 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 		}
 		// Check if currently expanded node is already a solution	
 		if (working_state.isFinal()){
-			std::cout << "Real solution returned in depth: " << current_actions.size() << std::endl;
 			return current_actions;
 		}
 		// optimalization 
 		if (current_actions.size() > depth){
 			if (found_potential == true){
-				std::cout << "Potential solution returned in depth: " << potentional_solution.size() << std::endl;
 				return potentional_solution;
 			}
 			found_potential = false;
@@ -121,11 +118,9 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 		}
 		// mem test // 50MB
 		if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
-			std::cout << "Solution not found (mem limit reached)" << std::endl;
 			return {};
 		}
 	}
-	std::cout << "Solution not found (end)" << std::endl;
 	return {};
 }
 
@@ -147,7 +142,6 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 	SearchState working_state(init_state);
 	actions = working_state.actions();
 	if (working_state.isFinal()){
-		std::cout << "Real solution returned in depth: 0" << std::endl;
 		return {};
 	}
 	// Expand first state 
@@ -169,7 +163,6 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 			working_state = action.execute(working_state);
 		}
 		if (working_state.isFinal()){
-			std::cout << "Real solution returned in depth: " << current_actions.size() << std::endl;
 			return current_actions;
 		}
 		// THIS ESTABLISHES THE MAX HEIGHT 
@@ -183,11 +176,9 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 		}
 		// mem test // 50MB
 		if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
-			std::cout << "Solution not found (mem limit in depth: " << current_actions.size() << ")" << std::endl;
 			return {};
 		}
 	}
-	std::cout << "Solution not found (end)" << std::endl;
 	return {};
 }
 
@@ -314,7 +305,6 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 	// check if the init state is not final
 	SearchState working_state(init_state);
 	if (working_state.isFinal()){
-		std::cout << "Real solution returned in depth: 0" << std::endl;
 		return {};
 	}
 
@@ -329,7 +319,6 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		next_state = act.execute(init_state);
 		// check if the next state is final
 		if (next_state.isFinal()) {
-			std::cout << "Potential solution returned in depth: " << current_actions.size() << std::endl;
 			return action;
 		}
 		heuristic = compute_heuristic(next_state, *heuristic_);
@@ -369,7 +358,6 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 			}
 			// check if the next state is final
 			if (next_state.isFinal()) {
-					std::cout << "Potential solution found in depth: " << current_actions.size() + 1 << std::endl;
 					return temp_actions;
 			}
 
@@ -388,11 +376,10 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		// new state -> need to recompute the card values
 		next_values_computed = false;
 
+		// mem test // 10MB
 		if ((size_t)getCurrentRSS() > mem_limit_ - AST_MEM_LIMIT_BYTES) {
-			std::cout << "Solution not found (mem limit)" << std::endl;
 			return {};
 		}
 	}
-	std::cout << "Solution not found (end)" << std::endl;
 	return {};
 }
