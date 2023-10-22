@@ -18,7 +18,7 @@
 #include <string>
 
 #define BFS_MEM_LIMIT_BYTES 50000000 //50MB
-#define AST_MEM_LIMIT_BYTES 10000000 //50MB
+#define AST_MEM_LIMIT_BYTES 10000000 //10MB
 
 size_t hash(const SearchState &state){
 	// creates hash from state as a string
