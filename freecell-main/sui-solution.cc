@@ -51,6 +51,9 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	std::vector<SearchAction> potentional_solution; 
 	bool found_potential = false;
 	long unsigned int depth = 0; 
+
+	// mem check counter
+	char mem_cnt = 1;
 	
 	// init open 
 	SearchState working_state(init_state);
@@ -117,8 +120,10 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 			}
 		}
 		// mem test // 50MB
-		if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
-			return {};
+		if (!(mem_cnt++ % 100)) {
+			if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
+				return {};
+			}
 		}
 	}
 	return {};
@@ -258,13 +263,13 @@ double StudentHeuristic::distanceLowerBound(const GameState &state) const {
 				// found
 				result += num_of_cards_on_stack - i - 1.0;
 				if (cards_found >= 3) {
-					return result;
+					return result*2;
 				}
 				cards_found++;
 			}
 		}
 	}
-	return result;
+	return result*2;
 }
 
 // type used for the priority queue used in A*
@@ -308,6 +313,9 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		return {};
 	}
 
+	// mem check counter
+	char mem_cnt = 1;
+
 	// initialise the open priority queue
 	std::vector<SearchAction> expand_actions = working_state.actions();
 	// add each action executable from the init state to the actions
@@ -319,6 +327,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		next_state = act.execute(init_state);
 		// check if the next state is final
 		if (next_state.isFinal()) {
+			std::cout<<"solution: 0"<<std::endl;
 			return action;
 		}
 		heuristic = compute_heuristic(next_state, *heuristic_);
@@ -358,6 +367,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 			}
 			// check if the next state is final
 			if (next_state.isFinal()) {
+					std::cout<<"solution: "<<temp_actions.size()<<std::endl;
 					return temp_actions;
 			}
 
@@ -377,8 +387,11 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		next_values_computed = false;
 
 		// mem test // 10MB
-		if ((size_t)getCurrentRSS() > mem_limit_ - AST_MEM_LIMIT_BYTES) {
-			return {};
+		if (!(mem_cnt++ % 100)) {
+			if ((size_t)getCurrentRSS() > mem_limit_ - AST_MEM_LIMIT_BYTES) {
+				std::cout<<"solution: not found"<<std::endl;
+				return {};
+			}
 		}
 	}
 	return {};
