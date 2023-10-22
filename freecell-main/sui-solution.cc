@@ -55,6 +55,7 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	// init open 
 	SearchState working_state(init_state);
 	if (working_state.isFinal()){
+		std::cout << "Real solution returned in depth: 0" << std::endl;
 		return {};
 	}
 	// first expand 
@@ -79,20 +80,20 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 		}
 		// Check if currently expanded node is already a solution	
 		if (working_state.isFinal()){
-			std::cout << std::endl << "Real solution returned in depth: " << current_actions.size() << "\nfinal_state:\n" << working_state << std::endl;
+			std::cout << "Real solution returned in depth: " << current_actions.size() << std::endl;
 			return current_actions;
 		}
 		// optimalization 
 		if (current_actions.size() > depth){
 			if (found_potential == true){
-				std::cout << "Potential solution found in depth: " << current_actions.size() << std::endl;
+				std::cout << "Potential solution returned in depth: " << potentional_solution.size() << std::endl;
 				return potentional_solution;
 			}
 			found_potential = false;
 			depth++;
 		}
 		
-		// ... GENERATE NEXT STATES and expand them 
+		// GENERATE NEXT STATES and expand them 
 		expand_actions = working_state.actions();		
 		for (const SearchAction& action: expand_actions) {
 			//  current actions (S,A,B) + actuall == (S,A,B,C)
@@ -120,10 +121,11 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 		}
 		// mem test // 50MB
 		if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
-			std::cout << "Solution found in depth: - (mem max, ended in depth: " << depth << ")" << std::endl;
+			std::cout << "Solution not found (mem limit reached)" << std::endl;
 			return {};
 		}
 	}
+	std::cout << "Solution not found (end)" << std::endl;
 	return {};
 }
 
@@ -145,6 +147,7 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 	SearchState working_state(init_state);
 	actions = working_state.actions();
 	if (working_state.isFinal()){
+		std::cout << "Real solution returned in depth: 0" << std::endl;
 		return {};
 	}
 	// Expand first state 
@@ -166,6 +169,7 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 			working_state = action.execute(working_state);
 		}
 		if (working_state.isFinal()){
+			std::cout << "Real solution returned in depth: " << current_actions.size() << std::endl;
 			return current_actions;
 		}
 		// THIS ESTABLISHES THE MAX HEIGHT 
@@ -179,10 +183,11 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 		}
 		// mem test // 50MB
 		if ((size_t)getCurrentRSS() > mem_limit_ - BFS_MEM_LIMIT_BYTES) {
+			std::cout << "Solution not found (mem limit in depth: " << current_actions.size() << ")" << std::endl;
 			return {};
 		}
 	}
-	
+	std::cout << "Solution not found (end)" << std::endl;
 	return {};
 }
 
@@ -309,6 +314,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 	// check if the init state is not final
 	SearchState working_state(init_state);
 	if (working_state.isFinal()){
+		std::cout << "Real solution returned in depth: 0" << std::endl;
 		return {};
 	}
 
@@ -327,7 +333,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 			return action;
 		}
 		heuristic = compute_heuristic(next_state, *heuristic_);
-		heuristic = 0 - (heuristic/2.0) - current_actions.size() - 1.0; // delka cesty, heuristiky jsou zaporne
+		heuristic = 0 - (heuristic) - current_actions.size() - 1.0; // delka cesty, heuristiky jsou zaporne
 		t = make_tuple(heuristic, action);
 		// push the new rated action to the priority queue
 		pq_open.push(t);
@@ -351,10 +357,10 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 			
 		// TODO remove
 		// check if the current state is final
-		if (working_state.isFinal()){
-			std::cout << "Real solution returned in depth: " << current_actions.size() << std::endl;
-			return current_actions;
-		}
+		// if (working_state.isFinal()){
+		// 	std::cout << "Real solution returned in depth: " << current_actions.size() << std::endl;
+		// 	return current_actions;
+		// }
 
 		// generate next actions and expand the current path
 		expand_actions = working_state.actions();	
@@ -379,7 +385,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 			if (closed.find(hash_num) == closed.end()) {	// not found
 				// compute heuristic for the next state
 				heuristic = compute_heuristic(next_state, *heuristic_);
-				heuristic = 0 - (heuristic*(current_actions.size())/2.0) - current_actions.size() - 1.0; // delka cesty
+				heuristic = 0 - (heuristic/current_actions.size()) - current_actions.size() - 1.0; // delka cesty
 				t = std::make_tuple(heuristic, temp_actions);
 				// push the new rated action to the priority queue and to the closed list
 				pq_open.push(t);
@@ -390,9 +396,10 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		next_values_computed = false;
 
 		if ((size_t)getCurrentRSS() > mem_limit_ - AST_MEM_LIMIT_BYTES) {
-			std::cout << "Solution not found" << std::endl;
+			std::cout << "Solution not found (mem limit)" << std::endl;
 			return {};
 		}
 	}
+	std::cout << "Solution not found (end)" << std::endl;
 	return {};
 }
