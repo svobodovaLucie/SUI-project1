@@ -53,7 +53,7 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 	long unsigned int depth = 0; 
 
 	// mem check counter
-	char mem_cnt = 1;
+	char mem_cnt = 0;
 	
 	// init open 
 	SearchState working_state(init_state);
@@ -315,7 +315,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 	}
 
 	// mem check counter
-	char mem_cnt = 1;
+	char mem_cnt = 0;
 
 	// initialise the open priority queue
 	std::vector<SearchAction> expand_actions = working_state.actions();
@@ -328,7 +328,6 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		next_state = act.execute(init_state);
 		// check if the next state is final
 		if (next_state.isFinal()) {
-			std::cout<<"solution: 0"<<std::endl;
 			return action;
 		}
 		heuristic = compute_heuristic(next_state, *heuristic_);
@@ -368,7 +367,6 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 			}
 			// check if the next state is final
 			if (next_state.isFinal()) {
-					std::cout<<"solution: "<<temp_actions.size()<<std::endl;
 					return temp_actions;
 			}
 
@@ -390,7 +388,6 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		// mem test // 10MB
 		if ((mem_cnt++ == 100)) {
 			if ((size_t)getCurrentRSS() > mem_limit_ - AST_MEM_LIMIT_BYTES) {
-				std::cout<<"solution: not found"<<std::endl;
 				return {};
 			}
 			mem_cnt = 0;
